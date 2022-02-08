@@ -1,1 +1,3 @@
 # TEM Particle Sizer
+
+This is an `ImageJ` script for the batch processing of (primarily) transmission electron microscopy nanoparticle images. It relies on having good particle images with a high contrast between the particles and image background. The user must input a directory which contains all images to be processed. The user will then set the scale bar length and these value will be applied globally to each image. Finally the images will be batch processed by thresholding and then running particle analysis. Particles will be outlined and images of the outlines along with the area data will be saved into a directory of the user's choosing.
