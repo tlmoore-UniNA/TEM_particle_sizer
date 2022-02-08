@@ -12,22 +12,39 @@
  */
 
 
-waitForUser("","Each directory should contain replicates of the same\n"+
-				"sample (i.e. put each sample and it's replicates in\n"+
-				"their own folder");
 // Loading data to process
 proc_dir = getDirectory("Choose a Directory to PROCESS"); // Get the directory to process
 list = getFileList(proc_dir); // Get list of all files in working directory
 open(proc_dir+list[0]); // Open the first file in the 
 
-// Define the length of the scale bare in the image
-scale_len = getNumber("Enter scale bar length (in nanometers):", 0);
+
+// Create GUI for initial inputs
+Dialog.create("User Inputs");
+Dialog.addMessage("Please input values.");
+Dialog.addNumber("Enter image scale bar length (in nanometers):", 0);
+Dialog.addMessage("Enter the range of diameters");
+Dialog.addNumber("Min. diameter (nm):", 0);
+Dialog.addNumber("Max. diameter (nm):" 999);
+Dialog.addMessage("Enter the range of particle circularity (0.00-1.00)");
+Dialog.addNumber("Min. circularity:", 0.00);
+Dialog.addNumber("Max. circularity:", 1.00);
+Dialog.show();
+
+// Get the values from the GUI inputs
+scale_len = Dialog.getNumber();
+min_diam = Dialog.getNumber();
+max_diam = Dialog.getNumber();
+min_circ = Dialog.getNumber();
+max_circ = Dialog.getNumber();
+
+min_area = 3.14159*pow(min_diam/2, 2)
+max_area = 3.14159*pow(max_diam/2, 2)
+
 
 setTool("line"); // Manually set the scale for the first image
-waitForUser("User Action", "All images in working directory must have the same magnification\n"+
-	"and be of the same sample. Use the line tool to select the length\n"+
-	"of the scale bar. Hold \"shift\" to draw a straight, horizontal line.\n"+
-	"Press OK when done");
+waitForUser("User Action", "Use the line tool to select the length of the scale bar. \n"+
+	"Hold \"shift\" to draw a straight, horizontal line.\n"+
+	"Press OK when done.");
 getLine(x1, y1, x2, y2, lineWidth); // get the measurements of the line segment
 
 // set scale for all images (globally)
@@ -35,8 +52,8 @@ run("Set Scale...", "distance=&lineWidth known=&scale_len unit=nm global");
 
 // Crop the photo to remove scale bar area
 setTool("rectangle");
-waitForUser("User Action", "Use the rectangle tool to select the image area of interest\n"+
-	"Press OK when done");
+waitForUser("User Action", "Use the rectangle tool to select the image area of interest.\n"+
+	"Press OK when done.");
 getSelectionBounds(x, y, width, height);
 xrec = x
 yrec = y
@@ -57,11 +74,14 @@ function particle_sizer(input, output, filename){
 	img_title = substring(title, 0, dotIndex); // subset only image title (remove file type)
 	makeRectangle(xrec, yrec, xwidth, yheight);
 	run("Crop");
-	setAutoThreshold("Default");
+	run("Threshold...");
+	waitForUser("User Action", "Set image threshold.\n"+
+		"Press OK when done.");
+	//setAutoThreshold("Default");
 	setOption("BlackBackground", false);
 	run("Convert to Mask");
 	run("Watershed");
-	run("Analyze Particles...", "size=50-Infinity circularity=0.65-1.00 show=Outlines display exclude clear");
+	run("Analyze Particles...", "size=&min_area-&max_area circularity=&min_circ-&max_circ show=Outlines display exclude clear");
 	// Save the image/results files
 	saveAs("Results", results_dir+img_title+".csv");
 	saveAs("Drawing of "+title, results_dir+"outlines_"+title);
@@ -70,44 +90,13 @@ function particle_sizer(input, output, filename){
 	selectWindow("outlines_"+title);
 	close();
 	selectWindow("Results");
+	close();
 }
 
-
 // Batch process the image for particle sizing for all images in directory
-setBatchMode(true)
+//setBatchMode(true)
 for (i=0; i < list.length; i++){
 	particle_sizer(proc_dir, results_dir, list[i]);
 }
-setBatchMode(false);
+//setBatchMode(false);
  
-
-
-
-
-
-
-
-
-/*
-title = getTitle(); // get window title
-dotIndex = indexOf(title, "."); // set dot index for image title
-img_title = substring(title, 0, dotIndex); // subset only image title (remove file type)
-makeRectangle(xrec, yrec, xwidth, yheight);
-run("Crop");
-setAutoThreshold("Default");
-//waitForUser("User Action", "Set the threshold for the image");
-setOption("BlackBackground", false);
-run("Convert to Mask");
-run("Watershed");
-run("Analyze Particles...", "size=50-Infinity circularity=0.65-1.00 show=Outlines display exclude clear");
- 
- // Saving outputs
-saveAs("Results", results_dir+img_title+".csv");
-saveAs("Drawing of "+title, results_dir+"outlines_"+title);
-selectWindow(title);
-close();
-selectWindow("outlines_"+title);
-close();
-selectWindow("Results");
-
- */
